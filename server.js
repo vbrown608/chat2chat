@@ -1,11 +1,16 @@
 const net = require('net');
 
-const server = net.createServer((c) => {
+const server = net.createServer(c => {
   console.log('connected');
-  c.on('end',() => {
+
+  c.on('data', data => {
+    c.write(data);
+  });
+
+  c.on('end', () => {
     console.log('disconnected');
   });
-  c.pipe(c);
+
 });
 
 server.listen(8080, () => {
