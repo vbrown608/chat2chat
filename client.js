@@ -3,17 +3,17 @@ const jsonStream = require('duplex-json-stream');
 
 const nickname = process.argv[2];
 
-const socket = jsonStream(net.connect(8080));
+const socket = net.connect(8080);
+const stream = jsonStream(socket);
 
 socket.on('connect', () => {
   process.stdin.on('data', (data) => {
-    console.log('Got data: ' + data);
-    socket.write({nickname: nickname, message: data});
+    stream.write({nickname: nickname, message: data.toString()});
   });
 });
 
-socket.on('data', (data) => {
-  process.stdout.write(data.username);
+stream.on('data', (data) => {
+  process.stdout.write(data.nickname);
   process.stdout.write('> ');
   process.stdout.write(data.message);
 });
