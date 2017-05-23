@@ -1,7 +1,10 @@
 const net = require('net');
 const streamSet = require('stream-set');
+const register = require('register-multicast-dns');
 
 const activeSockets = streamSet();
+
+register('chat2chat');
 
 const server = net.createServer(c => {
   console.log('connected');

@@ -1,9 +1,10 @@
 const net = require('net');
 const jsonStream = require('duplex-json-stream');
+require('lookup-multicast-dns/global');
 
 const nickname = process.argv[2];
 
-const socket = net.connect(8080);
+const socket = net.connect(8080, 'chat2chat.local');
 const stream = jsonStream(socket);
 
 socket.on('connect', () => {
