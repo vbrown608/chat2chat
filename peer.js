@@ -1,15 +1,19 @@
 'use strict';
 
+const register = require('register-multicast-dns');
+const hashToPort = require('hash-to-port');
 const topology = require('fully-connected-topology');
 const jsonStream = require('duplex-json-stream');
 const streamSet = require('stream-set');
+require('lookup-multicast-dns/global');
 
 const nickname = process.argv[2];
-const myaddr = process.argv[3];
-const peerAddrs = process.argv.slice(4);
+const peerNames = process.argv.slice(3);
 const peers = streamSet();
 
-const mytop = topology(myaddr, peerAddrs);
+const mytop = topology(toAddress(nickname), peerNames.map(toAddress));
+
+register(nickname);
 
 var seq = 0;
 const id = Math.random();
@@ -19,6 +23,10 @@ function writeAll(data) {
   for (let stream of peers.streams) {
     stream.write(data);
   }
+}
+
+function toAddress(username){
+    return username + '.local:' + hashToPort(username);
 }
 
 function notSeen(data) {
