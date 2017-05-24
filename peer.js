@@ -4,8 +4,9 @@ const topology = require('fully-connected-topology');
 const jsonStream = require('duplex-json-stream');
 const streamSet = require('stream-set');
 
-const myaddr = process.argv[2];
-const peerAddrs = process.argv.slice(3);
+const nickname = process.argv[2];
+const myaddr = process.argv[3];
+const peerAddrs = process.argv.slice(4);
 const peers = streamSet();
 
 const mytop = topology(myaddr, peerAddrs);
@@ -17,7 +18,7 @@ function writeAll(data) {
 }
 
 process.stdin.on('data', (data) => {
-  writeAll({nickname: myaddr, message: data.toString()});
+  writeAll({nickname: nickname, message: data.toString()});
 });
 
 mytop.on('connection', (conn, peerAddr) => {
