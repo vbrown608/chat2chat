@@ -1,3 +1,4 @@
+'use strict';
 const level = require('level');
 const nickname = process.argv[2];
 
@@ -19,7 +20,7 @@ function decodeKey(key) {
   }
 }
 
-function peerMaxKey(peer) {
+function peerUpperBound(peer) {
   return pad(peer + 1, 4, '0');
 }
 
@@ -28,16 +29,28 @@ function getSeqs() {
 
 }
 
+// Get the highest seq for a single peer
+function getPeerSeq(peer, cb) {
+  db.createReadStream({
+    gte: encodeKey(peer, 0),
+    lt: encodeKey(peer+1, 0),
+    reverse: true,
+    limit: 1
+  }).on('data', data => {
+    let seq = decodeKey(data.key).seq;
+    cb(seq);
+  });
+}
+
 // Take a list of (peer, seq) pairs and return any required updates
 function getUpdates(seqs) {
+
 }
 
 function getPeerUpdates(peer, seq) {
-  var min = encodeKey(peer, seq);
-  var max = peerMaxKey(peer);
   db.createReadStream({
-    gt: min,
-    lt: max
+    gt: encodeKey(peer, seq),
+    lt: peerUpperBound(peer)
   }).on('data', data => {
     console.log(data)
   });
@@ -56,4 +69,6 @@ db.put(encodeKey(2, 1), 'onion');
 db.put(encodeKey(2, 2), 'noodles');
 db.put(encodeKey(2, 3), 'fusilli');
 
-getPeerUpdates(0, 0);
+getPeerSeq(0, console.log);
+getPeerSeq(1, console.log);
+getPeerSeq(2, console.log);
