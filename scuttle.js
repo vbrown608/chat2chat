@@ -1,8 +1,40 @@
 'use strict';
 const level = require('level');
-const nickname = process.argv[2];
+const through = require('through2');
 
+const nickname = process.argv[2];
 const db = level(nickname + '.db');
+
+exports = {
+  addPeer: addPeer,
+  getSeqs: getSeqs,
+  getPeerUpdates: getPeerUpdates
+}
+
+let str;
+
+function createReplicationStream() {
+  str = through.obj(function(chunk, enc, next) {
+    this.push(JSON.stringify(chunk));
+    if (chunk.type == 'digest') {
+      getPeerUpdates(chunk.peer, chunk.seq, this.push);
+    } else if (chunk.type == 'update') {
+      updateDB(chunk);
+    }
+    next();
+  });
+
+  return str;
+}
+
+function updateDB(data) {
+  db.put('foo', data.foo);
+  str.write({type: 'digest', foo: 'bar'});
+}
+
+createReplicationStream();
+process.stdin.pipe(str).pipe(process.stdout);
+updateDB({foo: 'bar'});
 
 function pad(n, l, p) {
   n = n + "";
@@ -94,6 +126,7 @@ db.put('peers', {
   1: true,
   2: true
 });
+
 db.put(encodeKey(0, 1), 'foo');
 db.put(encodeKey(0, 2), 'bar');
 db.put(encodeKey(0, 3), 'baz');
