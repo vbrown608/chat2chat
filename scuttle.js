@@ -11,10 +11,10 @@ exports = {
   getPeerUpdates: getPeerUpdates
 }
 
-let str;
+let stream;
 
 function createReplicationStream() {
-  str = through.obj(function(chunk, enc, next) {
+  stream = through.obj(function(chunk, enc, next) {
     this.push(JSON.stringify(chunk));
     if (chunk.type == 'digest') {
       getPeerUpdates(chunk.peer, chunk.seq, this.push);
@@ -24,16 +24,21 @@ function createReplicationStream() {
     next();
   });
 
-  return str;
+  return stream;
 }
 
 function updateDB(data) {
   db.put('foo', data.foo);
-  str.write({type: 'digest', foo: 'bar'});
+
+  // Updating the database triggers a new round of gossip
+  getSeqs(function(chunk, cb) {
+    // see https://github.com/nodejs/node-v0.x-archive/issues/7980
+    return stream.write(chunk, 'utf-8', cb);
+  });
 }
 
 createReplicationStream();
-process.stdin.pipe(str).pipe(process.stdout);
+process.stdin.pipe(stream).pipe(process.stdout);
 updateDB({foo: 'bar'});
 
 function pad(n, l, p) {
@@ -96,7 +101,11 @@ function getPeerSeq(peer, cb) {
     limit: 1
   }).on('data', data => {
     let seq = decodeKey(data.key).seq;
-    cb(peer, seq);
+    cb({
+      peer: peer,
+      seq: seq,
+      type: 'digest'
+    });
   });
 }
 
@@ -134,8 +143,3 @@ db.put(encodeKey(1, 1), 'garlic');
 db.put(encodeKey(2, 1), 'onion');
 db.put(encodeKey(2, 2), 'noodles');
 db.put(encodeKey(2, 3), 'fusilli');
-
-// getUpdates(getSeqs(console.log), console.log);
-getSeqs((peer, seq) => {
-  getPeerUpdates(peer, seq, console.log);
-});
