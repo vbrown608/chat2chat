@@ -64,10 +64,7 @@ function getPeerSeq(peer, cb) {
     limit: 1
   }).on('data', data => {
     let seq = decodeKey(data.key).seq;
-    cb({
-      peer: peer,
-      seq: seq
-    });
+    cb(peer, seq);
   });
 }
 
@@ -78,12 +75,12 @@ function getUpdates(seqs, cb) {
   });
 }
 
-function getPeerUpdates(peer, cb) {
+function getPeerUpdates(peer, seq, cb) {
   db.createReadStream({
     gt: encodeKey(peer, seq),
     lt: peerUpperBound(peer)
   }).on('data', data => {
-    cb(data)
+    cb(data);
   });
 }
 
@@ -105,4 +102,7 @@ db.put(encodeKey(2, 1), 'onion');
 db.put(encodeKey(2, 2), 'noodles');
 db.put(encodeKey(2, 3), 'fusilli');
 
-getUpdates(getSeqs(console.log), console.log);
+// getUpdates(getSeqs(console.log), console.log);
+getSeqs((peer, seq) => {
+  getPeerUpdates(peer, seq, console.log);
+});
